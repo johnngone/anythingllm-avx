@@ -1,0 +1,35 @@
+name: Build patched AnythingLLM
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 5 * * 0"
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Create Dockerfile
+        run: |
+          cat > Dockerfile <<'EOF'
+          FROM mintplexlabs/anythingllm:latest
+
+          WORKDIR /app/server
+
+          RUN sed -i '/provider = "prisma-client-js"/a\  engineType = "binary"' prisma/schema.prisma \
+           && npx prisma generate
+          EOF
+
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Build image
+        run: docker build -t ghcr.io/${{ github.repository_owner }}/anythingllm-avx:latest .
+
+      - name: Push image
+        run: docker push ghcr.io/${{ github.repository_owner }}/anythingllm-avx:latest
