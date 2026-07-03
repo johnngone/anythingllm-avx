@@ -22,6 +22,9 @@ jobs:
           WORKDIR /app/server
 
           RUN sed -i '/provider = "prisma-client-js"/a\  engineType = "binary"' prisma/schema.prisma \
+           && echo "===== Checking Prisma patch =====" \
+           && grep -A3 'generator client' prisma/schema.prisma \
+           && grep 'engineType = "binary"' prisma/schema.prisma \
            && npx prisma generate
           EOF
 
